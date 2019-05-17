@@ -1,7 +1,7 @@
 # Simple File Upload
 
 ## Requirements
-Python2.7
+Python3
 
 ## Usage
 ./fileupload.py
