@@ -39,8 +39,6 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         """Serve a GET request."""
         f = self.send_head()
         if f:
-            print(self.wfile)
-            print(f)
             self.copyfile(f, self.wfile)
             f.close()
 
@@ -55,16 +53,16 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         r, info = self.deal_post_data()
         print(r, info, "by: ", self.client_address)
         f = BytesIO()
-        f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
-        f.write("<html>\n<title>Upload Result Page</title>\n")
-        f.write("<body>\n<h2>Upload Result Page</h2>\n")
-        f.write("<hr>\n")
+        f.write(b'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
+        f.write(b'<html>\n<title>Upload Result Page</title>\n')
+        f.write(b'<body>\n<h2>Upload Result Page</h2>\n')
+        f.write(b'<hr>\n')
         if r:
-            f.write("<strong>Success:</strong>")
+            f.write(b"<strong>Success:</strong>")
         else:
-            f.write("<strong>Failed:</strong>")
-        f.write(info)
-        f.write(".</small></body>\n</html>\n")
+            f.write(b"<strong>Failed:</strong>")
+        f.write(bytes(info, 'utf8'))
+        f.write(b".</small></body>\n</html>\n")
         length = f.tell()
         f.seek(0)
         self.send_response(200)
@@ -76,15 +74,12 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             f.close()
 
     def deal_post_data(self):
-        boundary = self.headers.plisttext.split("=")[1]
         remainbytes = int(self.headers['content-length'])
         line = self.rfile.readline()
         remainbytes -= len(line)
-        if not boundary in line:
-            return (False, "Content NOT begin with boundary")
         line = self.rfile.readline()
         remainbytes -= len(line)
-        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line)
+        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', str(line))
         if not fn:
             return (False, "Can't find out file name...")
         path = os.getcwd() + '/uploads/'
@@ -103,9 +98,9 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         while remainbytes > 0:
             line = self.rfile.readline()
             remainbytes -= len(line)
-            if boundary in line:
+            if remainbytes == 0:
                 preline = preline[0:-1]
-                if preline.endswith('\r'):
+                if preline.endswith(b'\r'):
                     preline = preline[0:-1]
                 out.write(preline)
                 out.close()
