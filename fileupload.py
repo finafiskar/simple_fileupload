@@ -17,9 +17,9 @@ import shutil
 import mimetypes
 import re
 try:
-    from io import StringIO
+    from io import BytesIO
 except ImportError:
-    from io import StringIO
+    from io import BytesIO
 
 
 class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -39,6 +39,8 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         """Serve a GET request."""
         f = self.send_head()
         if f:
+            print(self.wfile)
+            print(f)
             self.copyfile(f, self.wfile)
             f.close()
 
@@ -52,7 +54,7 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         """Serve a POST request."""
         r, info = self.deal_post_data()
         print(r, info, "by: ", self.client_address)
-        f = StringIO()
+        f = BytesIO()
         f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
         f.write("<html>\n<title>Upload Result Page</title>\n")
         f.write("<body>\n<h2>Upload Result Page</h2>\n")
@@ -166,16 +168,16 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(404, "No permission to list directory")
             return None
         list.sort(key=lambda a: a.lower())
-        f = StringIO()
+        f = BytesIO()
         displaypath = cgi.escape(urllib.parse.unquote(self.path))
-        f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
-        f.write("<html>\n<title>Directory listing for %s</title>\n" % displaypath)
-        f.write("<body>\n<h2>Directory listing for %s</h2>\n" % displaypath)
-        f.write("<hr>\n")
-        f.write("<form ENCTYPE=\"multipart/form-data\" method=\"post\">")
-        f.write("<input name=\"file\" type=\"file\"/>")
-        f.write("<input type=\"submit\" value=\"upload\"/></form>\n")
-        f.write("<hr>\n<ul>\n")
+        f.write(b'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
+        f.write(b"<html>\n<title>Directory listing for %b</title>\n" % bytes(displaypath, 'utf8'))
+        f.write(b"<body>\n<h2>Directory listing for %b</h2>\n" % bytes(displaypath, 'utf8'))
+        f.write(b"<hr>\n")
+        f.write(b"<form ENCTYPE=\"multipart/form-data\" method=\"post\">")
+        f.write(b"<input name=\"file\" type=\"file\"/>")
+        f.write(b"<input type=\"submit\" value=\"upload\"/></form>\n")
+        f.write(b"<hr>\n<ul>\n")
         for name in list:
             fullname = os.path.join(path, name)
             displayname = linkname = name
@@ -186,9 +188,9 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             if os.path.islink(fullname):
                 displayname = name + "@"
                 # Note: a link to a directory displays with @ and links with /
-            f.write('<li><a href="%s">%s</a>\n'
-                    % (urllib.parse.quote(linkname), cgi.escape(displayname)))
-        f.write("</ul>\n<hr>\n</body>\n</html>\n")
+            f.write(b'<li><a href="%b">%b</a>\n'
+                    % (bytes(urllib.parse.quote(linkname), 'utf8'), bytes(cgi.escape(displayname), 'utf8')))
+        f.write(b"</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
         self.send_response(200)
